@@ -1,0 +1,12 @@
+# configs/server/server2.yaml
+
+server_name: server2
+
+raw_data_dir: /storage/researchlm/raw
+cleaned_data_dir: /storage/researchlm/cleaned
+
+tokenized_dir: /nvme/researchlm/tokenized
+checkpoint_dir: /storage/researchlm/checkpoints
+
+num_gpus: 2
+precision: fp16

@@ -1,0 +1,10 @@
+# configs/server/server1.yaml
+
+server_name: server1
+
+data_root: /opt/dlami/nvme/researchlm
+tokenized_dir: /opt/dlami/nvme/researchlm/tokenized
+checkpoint_dir: /opt/dlami/nvme/researchlm/checkpoints
+
+num_gpus: 1
+precision: bf16
