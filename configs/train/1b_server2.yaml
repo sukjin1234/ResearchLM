@@ -1,5 +1,5 @@
 # ResearchLM-1B: 20B tokens (20 tok/param), ctx 4096, 2x RTX 8000 FP16.
-# Expect ~15k tok/s on 2x RTX 8000 -> 20B tokens is roughly 2 weeks wall-clock.
+# Measured 9-10k tok/s on 2x RTX 8000 -> 21B tokens is roughly 24-27 days wall-clock.
 # WSD schedule so the run can be extended to 40B/80B tokens from the "stable"
 # checkpoint without re-planning the cosine (goal.md section 2).
 run_name: researchlm-1b-v1

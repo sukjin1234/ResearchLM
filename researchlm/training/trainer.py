@@ -115,7 +115,13 @@ class Trainer:
         self.tokens_seen = state["tokens_seen"]
         if state.get("scaler") is not None and self.precision == "fp16":
             self.scaler.load_state_dict(state["scaler"])
-        self.train_data.load_state_dict(state["train_data"])
+        # Each rank consumes a different stream, so each restores its own position.
+        per_rank = state.get("train_data_per_rank")
+        if per_rank is not None and len(per_rank) == self.dist.world_size:
+            self.train_data.load_state_dict(per_rank[self.dist.rank])
+        else:
+            self.log("[warn] checkpoint has no data position for this world size; using rank 0's")
+            self.train_data.load_state_dict(state["train_data"])
         self.log(f"resumed from {ckpt} at step {self.step}")
 
     # ------------------------------------------------------------------ #
@@ -252,6 +258,11 @@ class Trainer:
 
     # ------------------------------------------------------------------ #
     def save(self) -> None:
+        data_state = self.train_data.state_dict()
+        per_rank = [data_state]
+        if self.dist.enabled:
+            per_rank = [None] * self.dist.world_size
+            torch.distributed.all_gather_object(per_rank, data_state)
         if not self.dist.is_main:
             if self.dist.enabled:
                 torch.distributed.barrier()
@@ -260,7 +271,8 @@ class Trainer:
             "step": self.step,
             "tokens_seen": self.tokens_seen,
             "scaler": self.scaler.state_dict() if self.precision == "fp16" else None,
-            "train_data": self.train_data.state_dict(),
+            "train_data": data_state,
+            "train_data_per_rank": per_rank,
             "precision": self.precision,
         }
         path = save_checkpoint(self.run_dir, self.step, self.model, self.optimizer,
