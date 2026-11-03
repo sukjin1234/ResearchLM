@@ -21,6 +21,8 @@ MD_HEADER_RE = re.compile(r"^#{1,6}\s", re.MULTILINE)
 BULLET_RE = re.compile(r"^\s*(?:[-*•▪◦]|\d+[.)])\s")
 WORD_RE = re.compile(r"[A-Za-z]+|[\uac00-\ud7a3]+|\d+")
 LOREM_RE = re.compile(r"lorem ipsum", re.IGNORECASE)
+# Korean gambling / adult ad spam.  Medical words are left out so that health articles survive.
+KO_SPAM_RE = re.compile("먹튀|토토사이트|안전놀이터|카지노사이트|온라인카지노|바카라|메이저사이트|스포츠토토|출장샵|출장안마|출장마사지|출장업소|조건만남|성인용품|야동|오피사이트")
 CURLY_RE = re.compile(r"[{}]")
 ELLIPSIS_ENDINGS = ("...", "…")
 
@@ -159,6 +161,7 @@ def text_features(text: str) -> dict[str, Any]:
         "md_header_count": len(MD_HEADER_RE.findall(text)),
         "curly_count": len(CURLY_RE.findall(text)),
         "lorem_ipsum": int(bool(LOREM_RE.search(text))),
+        "ko_spam_hits": len(KO_SPAM_RE.findall(text)),
     }
 
 

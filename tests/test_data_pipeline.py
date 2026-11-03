@@ -104,6 +104,10 @@ def test_reviewed_thresholds_from_full_data():
     assert keep, reason
     keep, reason, _ = flt["korean"].apply(GOOD_KO, {"minhash_cluster_size": 201})
     assert not keep and reason == "meta_big_dup_cluster"
+    keep, reason, _ = flt["korean"].apply(GOOD_KO + " 먹튀 사건을 다룬 기사이다.", {})
+    assert keep, reason
+    keep, reason, _ = flt["korean"].apply(GOOD_KO + " 먹튀 검증 토토사이트 안전놀이터 추천합니다.", {})
+    assert not keep and reason == "ko_spam"
 
 
 def test_exact_hash_normalisation():
