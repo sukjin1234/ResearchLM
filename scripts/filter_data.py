@@ -97,9 +97,10 @@ def main() -> None:
         "seconds": time.time() - t0,
     }
     write_json(out_dir / "filter_stats.json", report)
+    rng = random.Random(args.seed)
     with open(out_dir / "rejected_samples.txt", "w", encoding="utf-8") as f:
         for reason, items in rejected.items():
-            for it in items[: args.sample_rejected]:
+            for it in rng.sample(items, min(args.sample_rejected, len(items))):
                 f.write(json.dumps(it, ensure_ascii=False, default=str) + "\n")
     print(f"[{args.domain}] {n:,} docs -> kept {k:,} ({100*k/max(1,n):.1f}% docs, {100*report['kept_char_frac']:.1f}% chars) in {report['seconds']:.0f}s")
     for reason, cnt in list(report["rejections"].items())[:15]:
