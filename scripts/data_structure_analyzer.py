@@ -23,7 +23,7 @@ import numpy as np
 import pandas as pd
 
 import _bootstrap  # noqa: F401
-from researchlm.data.io import expand_inputs, iter_documents, write_json
+from researchlm.data.io import expand_inputs, iter_chunk, make_chunks, write_json
 from researchlm.data.quality import code_features, text_features
 
 META_KEEP = ["id", "url", "score", "int_score", "language", "language_score", "token_count", "minhash_cluster_size",
@@ -41,17 +41,28 @@ def _features(args):
     return f
 
 
-def reservoir_sample(docs, k: int, seed: int):
+def reservoir_sample(files, k: int, seed: int, scan_factor: int = 5):
+    """Uniform sample from randomly chosen chunks.
+
+    Scanning all of a 14M-document domain would take most of an hour.  We visit
+    row groups in random order and stop after scan_factor * k documents, which
+    still spreads the sample across files and crawl dates.
+    """
     rng = random.Random(seed)
+    chunks = make_chunks(files, target_rows=1000)
+    rng.shuffle(chunks)
     sample, n = [], 0
-    for d in docs:
-        n += 1
-        if len(sample) < k:
-            sample.append(d)
-        else:
-            j = rng.randrange(n)
-            if j < k:
-                sample[j] = d
+    for chunk in chunks:
+        for d in iter_chunk(chunk):
+            n += 1
+            if len(sample) < k:
+                sample.append(d)
+            else:
+                j = rng.randrange(n)
+                if j < k:
+                    sample[j] = d
+        if n >= scan_factor * k:
+            break
     return sample, n
 
 
@@ -126,7 +137,7 @@ def main() -> None:
         raise SystemExit(f"no input files for {args.input}")
     print(f"[{args.domain}] {len(files)} files; sampling {args.sample:,} docs")
 
-    docs, n_total = reservoir_sample(iter_documents(files), args.sample, args.seed)
+    docs, n_total = reservoir_sample(files, args.sample, args.seed)
     print(f"[{args.domain}] scanned {n_total:,} docs, kept {len(docs):,}")
     jobs = [(d.get("text") or "", {k: d.get(k) for k in META_KEEP if k in d}, feature_set) for d in docs]
     with Pool(args.workers) as pool:
@@ -153,7 +164,7 @@ def main() -> None:
     with open(out / f"{args.domain}_examples.jsonl", "w", encoding="utf-8") as f:
         for bucket, ds in picks.items():
             for d in ds:
-                f.write(json.dumps({"bucket": bucket, **{k: d.get(k) for k in META_KEEP if k in d}, "text": (d.get("text") or "")[:3000]}, ensure_ascii=False) + "\n")
+                f.write(json.dumps({"bucket": bucket, **{k: d.get(k) for k in META_KEEP if k in d}, "text": (d.get("text") or "")[:3000]}, ensure_ascii=False, default=str) + "\n")
 
     made = [] if args.no_plots else plot(df, args.domain, out)
     print(f"[{args.domain}] wrote features/summary/examples + {len(made)} plots -> {out}")

@@ -60,11 +60,35 @@ def open_text(path: str | Path, mode: str = "rt"):
     return open(path, mode, encoding="utf-8")
 
 
+def open_text_for_write(path: Path, ext: str):
+    """open_text picks the codec from the suffix, which a .tmp name hides."""
+    if ext.endswith(".zst"):
+        fh = open(path, "wb")
+        return io.TextIOWrapper(zstd.ZstdCompressor(level=3, threads=1).stream_writer(fh), encoding="utf-8")
+    return open(path, "wt", encoding="utf-8")
+
+
 def iter_jsonl(path: str | Path) -> Iterator[dict[str, Any]]:
     with open_text(path, "rt") as f:
         for line in f:
             if line.strip():
                 yield json.loads(line)
+
+
+def flatten_metadata(doc: dict[str, Any]) -> dict[str, Any]:
+    """Promote fields of a nested ``metadata`` struct to the top level.
+
+    FineWeb-Edu keeps language_score, score, int_score, token_count and url inside
+    a struct, while FineWeb2 and FineMath have them as plain columns.  Without this
+    the filters' ``meta.*`` rules silently do not apply to English.  FineMath's
+    ``metadata`` is a JSON string and is left untouched.
+    """
+    nested = doc.get("metadata")
+    if isinstance(nested, dict):
+        for k, v in nested.items():
+            doc.setdefault(k, v)
+        del doc["metadata"]
+    return doc
 
 
 def iter_parquet(path: str | Path, columns: Sequence[str] | None = None, batch_size: int = 2048) -> Iterator[dict[str, Any]]:
@@ -75,7 +99,7 @@ def iter_parquet(path: str | Path, columns: Sequence[str] | None = None, batch_s
         cols = [c for c in columns if c in have]
     for batch in pf.iter_batches(batch_size=batch_size, columns=cols):
         for row in batch.to_pylist():
-            yield row
+            yield flatten_metadata(row)
 
 
 def iter_documents(paths: Iterable[str | Path], columns: Sequence[str] | None = None) -> Iterator[dict[str, Any]]:
@@ -92,7 +116,12 @@ def count_parquet_rows(path: str | Path) -> int:
 
 
 class JsonlShardWriter:
-    """Write documents to <out_dir>/<prefix>_00000.jsonl.zst, rolling over every max_docs."""
+    """Write documents to <out_dir>/<prefix>_00000.jsonl.zst, rolling over every max_docs.
+
+    Each shard is written as ``<name>.tmp`` and renamed when complete.  A killed
+    process therefore never leaves a truncated zstd frame that would crash every
+    later stage; it only loses the unfinished shard, which a re-run regenerates.
+    """
 
     def __init__(self, out_dir: str | Path, prefix: str, max_docs: int = 100_000, compress: bool = True, start_index: int = 0):
         self.out_dir = Path(out_dir)
@@ -108,14 +137,15 @@ class JsonlShardWriter:
 
     def _open(self) -> None:
         path = self.out_dir / f"{self.prefix}_{self.shard_idx:05d}{self.ext}"
-        self._fh = open_text(path, "wt")
-        self.files.append(path)
+        self._final_path = path
+        self._tmp_path = path.with_name(path.name + ".tmp")
+        self._fh = open_text_for_write(self._tmp_path, self.ext)
         self.n_in_shard = 0
 
     def write(self, doc: dict[str, Any]) -> None:
         if self._fh is None:
             self._open()
-        self._fh.write(json.dumps(doc, ensure_ascii=False) + "\n")
+        self._fh.write(json.dumps(doc, ensure_ascii=False, default=str) + "\n")
         self.n_in_shard += 1
         self.total += 1
         if self.n_in_shard >= self.max_docs:
@@ -125,6 +155,8 @@ class JsonlShardWriter:
         if self._fh is not None:
             self._fh.close()
             self._fh = None
+            os.replace(self._tmp_path, self._final_path)
+            self.files.append(self._final_path)
             self.shard_idx += 1
 
     def close(self) -> list[Path]:
@@ -192,4 +224,4 @@ def iter_chunk(chunk: tuple[str, int, int], columns: Sequence[str] | None = None
         cols = [c for c in columns if c in have]
     for rg in range(rg_start, rg_end):
         for row in pf.read_row_group(rg, columns=cols).to_pylist():
-            yield row
+            yield flatten_metadata(row)

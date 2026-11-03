@@ -46,6 +46,16 @@ def count_tokens_in_file(path: Path, token_field: str | None, text_field: str, c
         for batch in pf.iter_batches(batch_size=65536, columns=[token_field]):
             total += int(pc.sum(batch.column(0)).as_py() or 0)
         return total, rows
+    if token_field and "metadata" in names:
+        # FineWeb-Edu stores token_count inside the metadata struct.
+        import pyarrow as pa
+        import pyarrow.compute as pc
+        mtype = pf.schema_arrow.field("metadata").type
+        if pa.types.is_struct(mtype) and token_field in [f.name for f in mtype]:
+            total = 0
+            for batch in pf.iter_batches(batch_size=65536, columns=["metadata"]):
+                total += int(pc.sum(batch.column(0).field(token_field)).as_py() or 0)
+            return total, rows
     # estimate from characters
     import pyarrow.compute as pc
     chars = 0
@@ -54,9 +64,19 @@ def count_tokens_in_file(path: Path, token_field: str | None, text_field: str, c
     return int(chars / chars_per_token), rows
 
 
-def download_one(repo: str, path_in_repo: str, local_dir: Path) -> Path:
+def download_one(repo: str, path_in_repo: str, local_dir: Path, retries: int = 8) -> Path:
+    """Unauthenticated requests hit rate limits on long runs, so back off and retry."""
     from huggingface_hub import hf_hub_download
-    return Path(hf_hub_download(repo, path_in_repo, repo_type="dataset", local_dir=str(local_dir)))
+    for attempt in range(retries):
+        try:
+            return Path(hf_hub_download(repo, path_in_repo, repo_type="dataset", local_dir=str(local_dir)))
+        except Exception as e:  # noqa: BLE001
+            if attempt == retries - 1:
+                raise
+            wait = min(600, 30 * 2 ** attempt)
+            print(f"  retry {attempt + 1}/{retries - 1} for {path_in_repo} in {wait}s: {type(e).__name__}: {str(e)[:160]}", flush=True)
+            time.sleep(wait)
+    raise RuntimeError("unreachable")
 
 
 def run_domain(name: str, spec: dict, raw_dir: Path, max_files: int | None, workers: int) -> dict:

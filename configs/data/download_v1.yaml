@@ -10,13 +10,13 @@ domains:
   english:
     repo: HuggingFaceTB/smollm-corpus
     prefix: fineweb-edu-dedup/
-    token_budget: 13.0e9          # ~0.94B tokens per 2.2GiB file -> ~14 files, ~31 GiB
+    token_budget: 13.0e9          # ~0.81B GPT-2 tokens per 2.2GiB file -> ~17 files, ~38 GiB
     token_field: token_count
     text_field: text
   korean:
     repo: HuggingFaceFW/fineweb-2
     prefix: data/kor_Hang/train/
-    token_budget: 6.5e9           # no token_count column: estimated from chars (2.1 chars/token)
+    token_budget: 6.5e9           # no token_count column: estimated from chars (2.1 chars/token), ~1.46B per file -> ~5 files, ~23 GiB
     chars_per_token: 2.1
     text_field: text
   math:

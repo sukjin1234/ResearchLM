@@ -100,7 +100,7 @@ def main() -> None:
     with open(out_dir / "rejected_samples.txt", "w", encoding="utf-8") as f:
         for reason, items in rejected.items():
             for it in items[: args.sample_rejected]:
-                f.write(json.dumps(it, ensure_ascii=False) + "\n")
+                f.write(json.dumps(it, ensure_ascii=False, default=str) + "\n")
     print(f"[{args.domain}] {n:,} docs -> kept {k:,} ({100*k/max(1,n):.1f}% docs, {100*report['kept_char_frac']:.1f}% chars) in {report['seconds']:.0f}s")
     for reason, cnt in list(report["rejections"].items())[:15]:
         print(f"   {reason:28s} {cnt:>10,} ({100*cnt/max(1,n):.2f}%)")
