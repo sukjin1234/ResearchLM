@@ -91,6 +91,21 @@ def test_math_filter_tolerates_separators():
     assert not keep_en  # the same text fails the stricter English rules
 
 
+def test_reviewed_thresholds_from_full_data():
+    """LaTeX lowers language_score, and a mid-size near-dup cluster is still a real article."""
+    flt = load_filters(FILTERS)
+    keep, reason, _ = flt["math"].apply(GOOD_MATH, {"language_score": 0.45, "int_score": 4})
+    assert keep, reason
+    keep, reason, _ = flt["math"].apply(GOOD_MATH, {"language_score": 0.2, "int_score": 4})
+    assert not keep and reason == "meta_language_score"
+    keep, reason, _ = flt["math"].apply(GOOD_MATH + "\n" + "代价函数和梯度下降" * 40, {"language_score": 0.45})
+    assert not keep and reason == "cjk_heavy"
+    keep, reason, _ = flt["korean"].apply(GOOD_KO, {"minhash_cluster_size": 150})
+    assert keep, reason
+    keep, reason, _ = flt["korean"].apply(GOOD_KO, {"minhash_cluster_size": 201})
+    assert not keep and reason == "meta_big_dup_cluster"
+
+
 def test_exact_hash_normalisation():
     assert exact_hash("Hello,  World!") == exact_hash("hello world")
     assert normalize_text("A  b\n c") == "a b c"

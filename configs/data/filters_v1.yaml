@@ -1,14 +1,15 @@
-# ResearchLM Data Filter v1 (DRAFT thresholds).
+# ResearchLM Data Filter v1.
 #
 # Rules are evaluated top to bottom; a document is KEPT only if every rule
 # holds.  "feature" refers to researchlm/data/quality.py output, or
 # "meta.<column>" for dataset metadata (rule skipped when the column is absent).
 # Thresholds start from Gopher / FineWeb defaults, adjusted with the sample
-# statistics in goal.md section 11.  Revisit after the manual review step
-# (scripts/filter_data.py --sample-rejected) and record changes under "history".
-version: v1-draft
+# statistics in goal.md section 11, then with the manual review of the full-data
+# run (scripts/filter_data.py --sample-rejected).  Changes are recorded under "history".
+version: v1
 history:
   - 2026-10-26: initial draft from 10K-sample analysis
+  - 2026-11-03: full-data review. math meta_language_score 0.60 -> 0.30 and new cjk_heavy rule; korean meta_big_dup_cluster 50 -> 200. English rules unchanged, so its draft-labelled output stays valid.
 
 domains:
   english:
@@ -61,7 +62,7 @@ domains:
       - {feature: ellipsis_line_frac, op: "<=", value: 0.30, name: ellipsis_lines}
       - {feature: bullet_line_frac,   op: "<=", value: 0.90, name: bullet_lines}
       - {feature: meta.language_score, op: ">=", value: 0.60, name: meta_language_score}
-      - {feature: meta.minhash_cluster_size, op: "<=", value: 50, name: meta_big_dup_cluster}  # near-dup cluster already large upstream
+      - {feature: meta.minhash_cluster_size, op: "<=", value: 200, name: meta_big_dup_cluster}  # above this mostly shop / terms boilerplate; 51-200 is still real articles
 
   math:
     feature_set: text
@@ -77,7 +78,8 @@ domains:
       - {feature: dup_line_char_frac, op: "<=", value: 0.35, name: dup_line_chars}
       - {feature: dup_10gram_frac,    op: "<=", value: 0.50, name: dup_10gram}       # formulas / tables repeat; Gopher 0.10 would cut a quarter of FineMath
       - {feature: lorem_ipsum,        op: "==", value: 0,    name: lorem_ipsum}
-      - {feature: meta.language_score, op: ">=", value: 0.60, name: meta_language_score}
+      - {feature: cjk_ratio,          op: "<=", value: 0.05, name: cjk_heavy}         # low-score Chinese posts; the language_score floor no longer catches all of them
+      - {feature: meta.language_score, op: ">=", value: 0.30, name: meta_language_score}  # LaTeX lowers the score: 0.30-0.60 is mostly valid solutions
       - {feature: meta.int_score,     op: ">=", value: 4,    name: meta_int_score}    # FineMath-4+ is already >=4; keeps the rule explicit
 
   code:
