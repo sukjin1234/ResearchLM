@@ -1,0 +1,9 @@
+# Pretraining Dataset v1 baseline mixture (goal.md section 8).
+# Keys must match the sub-directories of <tokenized_dir>.
+# "code" is listed for completeness but has weight 0 until the Stack-Edu
+# retrieval pipeline exists; the trainer skips zero-weight domains.
+mixture:
+  english: 0.50
+  korean:  0.25
+  code:    0.00
+  math:    0.10

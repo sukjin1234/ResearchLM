@@ -1,0 +1,27 @@
+# Pipeline smoke test: single GPU, ~2 minutes.
+run_name: tiny-debug
+tokenizer_path: /storage/researchlm/tokenizer/researchlm_32k.model
+tokenized_dir: /storage/researchlm/tokenized/samples_v0
+checkpoint_dir: /storage/researchlm/checkpoints
+log_dir: logs
+
+mixture: {english: 0.5, korean: 0.25, math: 0.10}
+seq_len: 512
+micro_batch_size: 16
+grad_accum_steps: 2
+
+max_steps: 60
+warmup_steps: 10
+lr: 3.0e-3
+min_lr_ratio: 0.1
+scheduler: cosine
+weight_decay: 0.1
+grad_clip: 1.0
+
+precision: fp16
+compile: false
+eval_interval: 20
+eval_batches: 5
+log_interval: 5
+save_interval: 30
+keep_last_checkpoints: 2

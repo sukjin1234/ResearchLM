@@ -1,0 +1,31 @@
+# ResearchLM-1B: 20B tokens (20 tok/param), ctx 4096, 2x RTX 8000 FP16.
+# Measured 9-10k tok/s on 2x RTX 8000 -> 21B tokens is roughly 24-27 days wall-clock.
+# WSD schedule so the run can be extended to 40B/80B tokens from the "stable"
+# checkpoint without re-planning the cosine (goal.md section 2).
+run_name: researchlm-1b-v1
+tokenizer_path: /storage/researchlm/tokenizer/researchlm_32k.model
+tokenized_dir: /storage/researchlm/tokenized/v1
+checkpoint_dir: /storage/researchlm/checkpoints
+log_dir: logs
+mixture: {english: 0.50, korean: 0.25, code: 0.15, math: 0.10}
+seq_len: 4096
+micro_batch_size: 4
+grad_accum_steps: 64         # 4 x 64 x 2 x 4096 = 2,097,152 tokens/step
+max_steps: 10000             # 21B tokens
+warmup_steps: 500
+lr: 4.0e-4
+min_lr_ratio: 0.1
+scheduler: wsd
+wsd_decay_fraction: 0.2
+beta1: 0.9
+beta2: 0.95
+weight_decay: 0.1
+grad_clip: 1.0
+precision: fp16
+compile: true
+gradient_checkpointing: true   # required to fit 4 x 4096 sequences per 48GB GPU
+eval_interval: 250
+eval_batches: 20
+log_interval: 10
+save_interval: 500
+keep_last_checkpoints: 6

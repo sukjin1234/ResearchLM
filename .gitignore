@@ -3,10 +3,10 @@ __pycache__/
 
 .env
 
-data/
-data_samples/
+/data/
+/data_samples/
 
-logs/
+/logs/
 checkpoints/
 
 wandb/
@@ -17,3 +17,6 @@ wandb/
 *.pt
 *.pth
 *.safetensors
+
+goal.md
+handoff.md
