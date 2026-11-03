@@ -25,7 +25,7 @@ EXAMPLES = [
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--tokenizer", required=True)
-    ap.add_argument("--input", action="append", default=[], help="domain=path.jsonl")
+    ap.add_argument("--input", action="append", default=[], help="domain=file|dir|glob")
     ap.add_argument("--limit", type=int, default=2000)
     ap.add_argument("--json-out", default=None)
     args = ap.parse_args()

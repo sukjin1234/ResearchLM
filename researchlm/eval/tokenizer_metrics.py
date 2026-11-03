@@ -8,19 +8,23 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from typing import Iterable
 
+from ..data.io import expand_inputs, iter_documents
 from ..data.tokenizer import Tokenizer
 
 
-def iter_texts(jsonl_path: str | Path, limit: int | None = None) -> Iterable[str]:
-    with open(jsonl_path, encoding="utf-8") as f:
-        for i, line in enumerate(f):
-            if limit is not None and i >= limit:
+def iter_texts(spec: str | Path, limit: int | None = None) -> Iterable[str]:
+    """spec = file / directory / glob. `limit` is split evenly over the files, because
+    a code directory is sorted by language and would otherwise yield only its first one."""
+    files = expand_inputs([spec])
+    per_file = None if limit is None else max(1, limit // max(1, len(files)))
+    for path in files:
+        for i, doc in enumerate(iter_documents([path], columns=["text"])):
+            if per_file is not None and i >= per_file:
                 break
-            yield json.loads(line)["text"]
+            yield doc["text"]
 
 
 def compression_stats(tok: Tokenizer, texts: Iterable[str]) -> dict[str, float]:

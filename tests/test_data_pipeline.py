@@ -18,6 +18,7 @@ from researchlm.data.dedup import MinHasher, cluster_by_lsh, duplicates_to_drop,
 from researchlm.data.filters import load_filters  # noqa: E402
 from researchlm.data.io import JsonlShardWriter, expand_inputs, iter_documents, make_chunks, iter_chunk  # noqa: E402
 from researchlm.data.quality import code_features, text_features  # noqa: E402
+from researchlm.eval.tokenizer_metrics import iter_texts  # noqa: E402
 
 FILTERS = ROOT / "configs/data/filters_v1.yaml"
 GOOD_EN = ("The mitochondrion is an organelle found in most eukaryotic cells. It generates most of the cell's supply of "
@@ -153,6 +154,16 @@ def test_jsonl_zst_roundtrip_and_chunks():
         assert [x["i"] for x in docs] == list(range(7))
         chunks = make_chunks(expand_inputs([d]))
         assert len(chunks) == 3 and sum(1 for c in chunks for _ in iter_chunk(c)) == 7
+
+
+def test_tokenizer_eval_samples_every_file_of_a_directory():
+    with tempfile.TemporaryDirectory() as d:
+        w = JsonlShardWriter(d, "t", max_docs=3)
+        for i in range(9):
+            w.write({"text": f"doc {i}"})
+        w.close()
+        assert list(iter_texts(d, limit=3)) == ["doc 0", "doc 3", "doc 6"]
+        assert len(list(iter_texts(d))) == 9
 
 
 def test_nested_metadata_is_flattened_and_json_safe():
