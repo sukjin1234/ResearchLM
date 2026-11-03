@@ -95,3 +95,6 @@ wandb==0.30.0
 Werkzeug==3.1.8
 xxhash==4.0.1
 yarl==1.25.1
+boto3==1.43.118
+matplotlib==3.11.2
+zstandard==0.25.0
