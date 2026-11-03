@@ -1,0 +1,16 @@
+# ResearchLM-1B (goal.md table): 21 x 2048, 32 Q / 8 KV heads, SwiGLU 5504, ctx 4096.
+# ~1.0B params. tie_embeddings is an ablation candidate at this size.
+name: researchlm-1b
+vocab_size: 32768
+max_seq_len: 4096
+d_model: 2048
+n_layers: 21
+n_heads: 32          # head_dim 64
+n_kv_heads: 8
+ffn_hidden: 5504
+rms_norm_eps: 1.0e-5
+qk_norm: true
+rope_theta: 10000.0   # consider 500000 if context is later extended beyond 4K
+dropout: 0.0
+tie_embeddings: true
+init_std: 0.02

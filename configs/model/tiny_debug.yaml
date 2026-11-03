@@ -1,0 +1,17 @@
+# ~3M-param model used only to validate the whole pipeline in minutes.
+name: tiny-debug
+vocab_size: 32768
+max_seq_len: 512
+
+d_model: 128
+n_layers: 4
+n_heads: 4
+n_kv_heads: 2
+ffn_hidden: 352
+
+rms_norm_eps: 1.0e-5
+qk_norm: true
+rope_theta: 10000.0
+dropout: 0.0
+tie_embeddings: true
+init_std: 0.02

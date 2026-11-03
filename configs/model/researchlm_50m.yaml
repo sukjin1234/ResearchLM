@@ -1,0 +1,21 @@
+# ResearchLM-50M  (see docs/researchlm_50m_guide.md for the reasoning)
+name: researchlm-50m
+vocab_size: 32768
+max_seq_len: 2048
+
+d_model: 512
+n_layers: 12
+n_heads: 8          # head_dim = 512 / 8 = 64
+n_kv_heads: 2       # GQA: 4 query heads share each KV head
+ffn_hidden: 1408    # SwiGLU, ~2.75 * d_model, multiple of 64
+
+rms_norm_eps: 1.0e-5
+qk_norm: true
+rope_theta: 10000.0
+dropout: 0.0
+tie_embeddings: true
+init_std: 0.02
+
+bos_token_id: 1
+eos_token_id: 2
+pad_token_id: 3

@@ -1,0 +1,15 @@
+# ResearchLM-300M (goal.md table). Context grows to 4096 here.
+name: researchlm-300m
+vocab_size: 32768
+max_seq_len: 4096
+d_model: 1024
+n_layers: 24
+n_heads: 16          # head_dim 64
+n_kv_heads: 4
+ffn_hidden: 2816
+rms_norm_eps: 1.0e-5
+qk_norm: true
+rope_theta: 10000.0
+dropout: 0.0
+tie_embeddings: true
+init_std: 0.02
