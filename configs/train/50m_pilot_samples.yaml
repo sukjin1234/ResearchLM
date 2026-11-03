@@ -1,0 +1,33 @@
+# ResearchLM-50M *pilot* on the current 30K-document samples (~35M tokens).
+# Purpose: verify the 50M architecture trains and produces sane text.
+# NOT the official run - the sample corpus is ~30x too small for 1B tokens,
+# so we stop at ~105M tokens (~3 epochs) to avoid heavy memorisation.
+run_name: researchlm-50m-pilot
+tokenizer_path: /storage/researchlm/tokenizer/researchlm_32k.model
+tokenized_dir: /storage/researchlm/tokenized/samples_v0
+checkpoint_dir: /storage/researchlm/checkpoints
+log_dir: logs
+
+mixture: {english: 0.5, korean: 0.25, math: 0.10}
+seq_len: 2048
+micro_batch_size: 16
+grad_accum_steps: 8         # 16 x 8 x 2 GPU x 2048 = 524,288 tokens/step
+
+max_steps: 200              # ~105M tokens
+warmup_steps: 20
+lr: 1.5e-3
+min_lr_ratio: 0.1
+scheduler: cosine
+beta1: 0.9
+beta2: 0.95
+weight_decay: 0.1
+grad_clip: 1.0
+
+precision: fp16             # RTX 8000 (Turing) has no bf16
+compile: true               # verified on RTX 8000 (sm75): 165k tok/s vs 100k without, first step ~40s slower
+eval_interval: 25
+eval_batches: 10
+log_interval: 5
+save_interval: 50
+keep_last_checkpoints: 3
+wandb: false

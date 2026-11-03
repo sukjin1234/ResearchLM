@@ -1,0 +1,34 @@
+# ResearchLM-50M official run: 1B tokens (20 tokens/param), 2x RTX 8000, FP16.
+# Requires the cleaned + deduplicated corpus tokenized under tokenized_dir
+# (Phase 2/3 of goal.md). With the 30K-doc samples use 50m_pilot_samples.yaml.
+run_name: researchlm-50m-v1
+tokenizer_path: /storage/researchlm/tokenizer/researchlm_32k.model
+tokenized_dir: /storage/researchlm/tokenized/v1
+checkpoint_dir: /storage/researchlm/checkpoints
+log_dir: logs
+
+mixture: {english: 0.50, korean: 0.25, code: 0.15, math: 0.10}
+seq_len: 2048
+micro_batch_size: 16
+grad_accum_steps: 8         # 16 x 8 x 2 GPU x 2048 = 524,288 tokens/step
+
+max_steps: 2000             # 2000 x 524,288 = 1.05B tokens
+warmup_steps: 100
+lr: 1.5e-3                  # sweep candidates: 6e-4, 1e-3, 1.5e-3, 3e-3
+min_lr_ratio: 0.1
+scheduler: cosine
+beta1: 0.9
+beta2: 0.95
+eps: 1.0e-8
+weight_decay: 0.1
+grad_clip: 1.0
+
+precision: fp16
+compile: true               # verified on RTX 8000 (sm75): 165k tok/s vs 100k without, first step ~40s slower
+eval_interval: 100
+eval_batches: 20
+log_interval: 10
+save_interval: 250
+keep_last_checkpoints: 4
+wandb: false
+wandb_project: researchlm
